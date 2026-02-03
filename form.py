@@ -43,11 +43,17 @@ class message(QDialog):
         self.default_raster_combo = QComboBox()
         self.default_raster_combo.addItems(["Raster 1", "Raster 2"])
 
-        # Calculate percentages checkbox
-        self.percentage_checkbox = QCheckBox("Calculate percentages")
-
         # Button to generate matrix
         self.generate_btn = QPushButton("Generate Transition Matrix")
+
+        # QComboBox Matrix values shown label
+        self.values_shown_combo_label = QLabel("Values shown")
+        self.values_shown_combo_label.hide()
+
+        # QComboBox Matrix values shown
+        self.values_shown_combo = QComboBox()
+        self.values_shown_combo.addItems(["Cell count", "Overall percentage", "Row percentage", "Column percentage"])
+        self.values_shown_combo.hide()
 
         self.transition_mask_tip_label = QLabel()
 
@@ -60,6 +66,7 @@ class message(QDialog):
         self.pixmap_white.fill(Qt.white)
         self.pixmap_label.setPixmap(self.pixmap_white)
 
+        # Button layout
         self.close_button = QPushButton("&Close")
         self.save_matrix_button = QPushButton("&Save Transition Matrix")
         self.save_selection_button = QPushButton("&Save Transition Mask")
@@ -99,8 +106,9 @@ class message(QDialog):
         mainLayout.addWidget(self.compatibility_checkbox)
         mainLayout.addWidget(self.default_raster_combo_label)
         mainLayout.addWidget(self.default_raster_combo)
-        mainLayout.addWidget(self.percentage_checkbox)
         mainLayout.addWidget(self.generate_btn)
+        mainLayout.addWidget(self.values_shown_combo_label)
+        mainLayout.addWidget(self.values_shown_combo)
         mainLayout.addLayout(self.table_layout)
         mainLayout.addWidget(self.transition_mask_tip_label, alignment=Qt.AlignCenter)
         mainLayout.addWidget(self.pixmap_label, alignment=Qt.AlignCenter)
@@ -120,6 +128,7 @@ class message(QDialog):
         self.harmonized_rasters_button.clicked.connect(self.add_rasters)
         self.raster1_combo.layerChanged.connect(self.setup_raster1_band_combo)
         self.raster2_combo.layerChanged.connect(self.setup_raster2_band_combo)
+        self.values_shown_combo.currentIndexChanged.connect(self.change_shown_values)
 
         self.setup_raster1_band_combo()
         self.setup_raster2_band_combo()
@@ -159,10 +168,7 @@ class message(QDialog):
                 QMessageBox.warning(self, "Raster Layer Error" ,rast_check)
                 return
 
-        matrix = renderer.calculate_transmat(self, self.raster1_layer, self.raster2_layer, null_value)
-        if self.percentage_checkbox.isChecked():
-            matrix = (matrix / matrix.sum()) * 100
-            matrix = np.round(matrix, 2)
+        self.matrix = renderer.calculate_transmat(self, self.raster1_layer, self.raster2_layer, null_value)
 
         self.table_widget.clear()
         self.table_widget.setRowCount(self.n_classes)
@@ -172,13 +178,16 @@ class message(QDialog):
 
         for i in range(self.n_classes):
             for j in range(self.n_classes):
-                item = QTableWidgetItem(str(matrix[i, j]))
+                item = QTableWidgetItem(str(self.matrix[i, j]))
                 item.setTextAlignment(Qt.AlignCenter)
                 self.table_widget.setItem(i, j, item)
         
         self.pixmap_label.setPixmap(self.pixmap_white)
         self.transition_mask_tip_label.setText("Click on a cell to generate a transition mask.")
         self.transition_mask = np.array([])
+
+        self.values_shown_combo_label.show()
+        self.values_shown_combo.show()
 
         if isinstance(fixed_layers, list):
             self.harmonized_rasters_button.show()
@@ -267,3 +276,22 @@ class message(QDialog):
         
         self.raster2_band_combo.clear()
         self.raster2_band_combo.addItems([str(i) for i in range(1, raster2_band_number + 1)])
+
+    def change_shown_values(self):
+        if self.values_shown_combo.currentText() == "Overall percentage":
+            show_matrix = (self.matrix / self.matrix.sum()) * 100
+            show_matrix = np.round(show_matrix, 2)
+        elif self.values_shown_combo.currentText() == "Row percentage":
+            show_matrix = (self.matrix / self.matrix.sum(axis=1, keepdims=True)) * 100
+            show_matrix = np.round(show_matrix, 2)
+        elif self.values_shown_combo.currentText() == "Column percentage":
+            show_matrix = (self.matrix / self.matrix.sum(axis=0, keepdims=True)) * 100
+            show_matrix = np.round(show_matrix, 2)
+        else:
+            show_matrix = self.matrix
+
+        for i in range(self.n_classes):
+            for j in range(self.n_classes):
+                item = QTableWidgetItem(str(show_matrix[i, j]))
+                item.setTextAlignment(Qt.AlignCenter)
+                self.table_widget.setItem(i, j, item)
