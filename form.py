@@ -209,8 +209,11 @@ class message(QDialog):
         if not filename.lower().endswith(".csv"):
             filename += ".csv"
         try:
-            np.savetxt(filename, self.transition_counts, delimiter=";", fmt='%d')
-            QMessageBox.information(self, "Saved", f"Transition matrix saved to:\n{filename}")
+            if self.values_shown_combo.currentText() == "Cell count":
+                np.savetxt(filename, self.transition_counts, delimiter=";", fmt='%d')
+            else:
+                np.savetxt(filename, self.show_matrix, delimiter=";", fmt='%.2f')
+            QMessageBox.information(self, "Saved", f"Transition matrix saved to:\n{filename}")     
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file:\n{str(e)}")
 
@@ -279,19 +282,19 @@ class message(QDialog):
 
     def change_shown_values(self):
         if self.values_shown_combo.currentText() == "Overall percentage":
-            show_matrix = (self.matrix / self.matrix.sum()) * 100
-            show_matrix = np.round(show_matrix, 2)
+            self.show_matrix = (self.matrix / self.matrix.sum()) * 100
+            self.show_matrix = np.round(self.show_matrix, 2)
         elif self.values_shown_combo.currentText() == "Row percentage":
-            show_matrix = (self.matrix / self.matrix.sum(axis=1, keepdims=True)) * 100
-            show_matrix = np.round(show_matrix, 2)
+            self.show_matrix = (self.matrix / self.matrix.sum(axis=1, keepdims=True)) * 100
+            self.show_matrix = np.round(self.show_matrix, 2)
         elif self.values_shown_combo.currentText() == "Column percentage":
-            show_matrix = (self.matrix / self.matrix.sum(axis=0, keepdims=True)) * 100
-            show_matrix = np.round(show_matrix, 2)
+            self.show_matrix = (self.matrix / self.matrix.sum(axis=0, keepdims=True)) * 100
+            self.show_matrix = np.round(self.show_matrix, 2)
         else:
-            show_matrix = self.matrix
+            self.show_matrix = self.matrix
 
         for i in range(self.n_classes):
             for j in range(self.n_classes):
-                item = QTableWidgetItem(str(show_matrix[i, j]))
+                item = QTableWidgetItem(str(self.show_matrix[i, j]))
                 item.setTextAlignment(Qt.AlignCenter)
                 self.table_widget.setItem(i, j, item)
