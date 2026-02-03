@@ -19,9 +19,15 @@ class message(QDialog):
         self.raster1_combo = QgsMapLayerComboBox()
         self.raster1_combo.setFilters(Qgis.LayerFilter.RasterLayer)
 
+        self.raster1_band_label = QLabel("Raster 1 band")
+        self.raster1_band_combo = QComboBox()
+
         self.raster2_combo_label = QLabel("Raster 2")
         self.raster2_combo = QgsMapLayerComboBox()
         self.raster2_combo.setFilters(Qgis.LayerFilter.RasterLayer)
+
+        self.raster2_band_label = QLabel("Raster 2 band")
+        self.raster2_band_combo = QComboBox()
 
         self.na_spin_label = QLabel("NA Value")
         self.na_spin = QSpinBox()
@@ -77,8 +83,12 @@ class message(QDialog):
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(self.raster1_combo_label)
         mainLayout.addWidget(self.raster1_combo)
+        mainLayout.addWidget(self.raster1_band_label)
+        mainLayout.addWidget(self.raster1_band_combo)
         mainLayout.addWidget(self.raster2_combo_label)
         mainLayout.addWidget(self.raster2_combo)
+        mainLayout.addWidget(self.raster2_band_label)
+        mainLayout.addWidget(self.raster2_band_combo)
         mainLayout.addWidget(self.na_spin_label)
         mainLayout.addWidget(self.na_spin)
         mainLayout.addWidget(self.compatibility_checkbox)
@@ -103,6 +113,11 @@ class message(QDialog):
         self.table_widget.cellClicked.connect(self.on_cell_clicked)
         self.save_selection_button.clicked.connect(self.save_transition_mask_as_tif)
         self.harmonized_rasters_button.clicked.connect(self.add_rasters)
+        self.raster1_combo.layerChanged.connect(self.setup_raster1_band_combo)
+        self.raster2_combo.layerChanged.connect(self.setup_raster2_band_combo)
+
+        self.setup_raster1_band_combo()
+        self.setup_raster2_band_combo()
 
     def toggle_visibility_defrast(self):
         if self.compatibility_checkbox.isChecked():
@@ -229,3 +244,21 @@ class message(QDialog):
         self.raster2_layer.setName("Raster 2")
         QgsProject.instance().addMapLayer(self.raster1_layer)
         QgsProject.instance().addMapLayer(self.raster2_layer)
+
+    def setup_raster1_band_combo(self):
+        raster1_layer = self.raster1_combo.currentLayer()
+        if raster1_layer is None:
+            return 
+        raster1_band_number = raster1_layer.bandCount()
+        
+        self.raster1_band_combo.clear()
+        self.raster1_band_combo.addItems([str(i) for i in range(1, raster1_band_number + 1)])
+
+    def setup_raster2_band_combo(self):
+        raster2_layer = self.raster2_combo.currentLayer()
+        if raster2_layer is None:
+            return 
+        raster2_band_number = raster2_layer.bandCount()
+        
+        self.raster2_band_combo.clear()
+        self.raster2_band_combo.addItems([str(i) for i in range(1, raster2_band_number + 1)])

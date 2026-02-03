@@ -29,7 +29,7 @@ class renderer:
         self.value_to_index = None
 
     def calculate_transmat(self,raster1_layer:QgsRasterLayer, raster2_layer:QgsRasterLayer, null_value):
-        # rasters must have the same crs, extent, and resolutions, both must have the same datatype and have only one band
+        # rasters must have the same crs, extent, and resolutions, both must have the same datatype
         raster1_provider = raster1_layer.dataProvider()
         raster2_provider = raster2_layer.dataProvider()
 
@@ -42,12 +42,14 @@ class renderer:
         self.raster1_layer_crs = raster1_layer.crs()
 
         # Convert raster1_layer to numpy array
-        self.block = raster1_provider.block(1,self.extent,self.width,self.height)
+        raster1_band = int(self.raster1_band_combo.currentText())
+        self.block = raster1_provider.block(raster1_band,self.extent,self.width,self.height)
         self.raster1_numpy = np.frombuffer(self.block.data(), dtype=numpy_dtype)
         self.raster1_numpy.shape = (self.height,self.width)
 
         # Convert raster2_layer to numpy array
-        self.block = raster2_provider.block(1,self.extent,self.width,self.height)
+        raster2_band = int(self.raster2_band_combo.currentText())
+        self.block = raster2_provider.block(raster2_band,self.extent,self.width,self.height)
         self.raster2_numpy = np.frombuffer(self.block.data(), dtype=numpy_dtype)
         self.raster2_numpy.shape = (self.height,self.width)
 
@@ -129,9 +131,13 @@ class renderer:
         if default_raster == "Raster 1":
             default_raster = raster1_layer
             auxiliary_raster = raster2_layer
+            default_raster_band = int(self.raster1_band_combo.currentText())
+            auxiliary_raster_band = int(self.raster2_band_combo.currentText())
         else:
             default_raster = raster2_layer
             auxiliary_raster = raster1_layer
+            default_raster_band = int(self.raster2_band_combo.currentText())
+            auxiliary_raster_band = int(self.raster1_band_combo.currentText())
 
         # Assign crs to raster1 if needed
         if not default_raster.crs().isValid():
@@ -154,11 +160,11 @@ class renderer:
             src_path1,
             srcSRS = auxiliary_raster.crs().authid(),
             dstSRS = default_raster.crs().authid(),
-            srcNodata = auxiliary_raster.dataProvider().sourceNoDataValue(1),
+            srcNodata = auxiliary_raster.dataProvider().sourceNoDataValue(auxiliary_raster_band),
             dstNodata = self.na_spin.value(),
             xRes = default_raster.rasterUnitsPerPixelX(),
             yRes = default_raster.rasterUnitsPerPixelY(),
-            outputType = default_raster.dataProvider().dataType(1)
+            outputType = default_raster.dataProvider().dataType(default_raster_band)
         )
 
         # Load the warped raster as a new QgsRasterLayer
@@ -201,7 +207,7 @@ class renderer:
             xRes=default_raster.rasterUnitsPerPixelX(),
             yRes=default_raster.rasterUnitsPerPixelY(),
             dstNodata=self.na_spin.value(),
-            outputType=default_raster.dataProvider().dataType(1)
+            outputType=default_raster.dataProvider().dataType(default_raster_band)
         )
 
         warped = QgsRasterLayer(dst_path2, f"{auxiliary_raster.name()}_warped")
@@ -219,7 +225,7 @@ class renderer:
         gdal.Warp(
             dst_path3,
             src_path3,
-            srcNodata = default_raster.dataProvider().sourceNoDataValue(1),
+            srcNodata = default_raster.dataProvider().sourceNoDataValue(default_raster_band),
             dstNodata = self.na_spin.value(),
             outputBounds = (
                 intersection.xMinimum(),
@@ -230,7 +236,7 @@ class renderer:
             outputBoundsSRS=default_raster.crs().authid(),
             xRes=default_raster.rasterUnitsPerPixelX(),
             yRes=default_raster.rasterUnitsPerPixelY(),
-            outputType=default_raster.dataProvider().dataType(1)
+            outputType=default_raster.dataProvider().dataType(default_raster_band)
         )
 
         warped = QgsRasterLayer(dst_path3, f"{default_raster.name()}_warped")
