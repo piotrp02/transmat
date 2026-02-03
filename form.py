@@ -29,6 +29,17 @@ class message(QDialog):
         self.na_spin.setMaximum(9999)
         self.na_spin.setValue(0)
 
+        # Auto-compatibility fix checkbox
+        self.compatibility_checkbox = QCheckBox("Auto-compatibility fix")
+
+        # QComboBox Label
+        self.default_raster_combo_label = QLabel("Default raster")
+
+        # QComboBox select raster to default to
+        self.default_raster_combo = QComboBox()
+        self.default_raster_combo.addItems(["Raster 1", "Raster 2"])
+
+        # Calculate percentages checkbox
         self.percentage_checkbox = QCheckBox("Calculate percentages")
 
         # Button to generate matrix
@@ -52,11 +63,15 @@ class message(QDialog):
         self.close_button = QPushButton("&Close")
         self.save_matrix_button = QPushButton("&Save Transition Matrix")
         self.save_selection_button = QPushButton("&Save Transition Mask")
+        self.harmonized_rasters_button = QPushButton("&Add Harmonized Rasters")
         self.button_layout = QHBoxLayout()
         self.button_layout.addStretch()
         self.button_layout.addWidget(self.close_button)
         self.button_layout.addWidget(self.save_matrix_button)
         self.button_layout.addWidget(self.save_selection_button)
+        self.button_layout.addWidget(self.harmonized_rasters_button)
+        self.harmonized_rasters_button.hide()
+
 
         # Add to your main layout
         mainLayout = QVBoxLayout()
@@ -66,6 +81,9 @@ class message(QDialog):
         mainLayout.addWidget(self.raster2_combo)
         mainLayout.addWidget(self.na_spin_label)
         mainLayout.addWidget(self.na_spin)
+        mainLayout.addWidget(self.compatibility_checkbox)
+        mainLayout.addWidget(self.default_raster_combo_label)
+        mainLayout.addWidget(self.default_raster_combo)
         mainLayout.addWidget(self.percentage_checkbox)
         mainLayout.addWidget(self.generate_btn)
         mainLayout.addWidget(self.table_widget)
@@ -74,29 +92,54 @@ class message(QDialog):
         mainLayout.addLayout(self.button_layout)
         self.setLayout(mainLayout)
 
+        # Turn on the Auto-compatibility fix by default
+        self.compatibility_checkbox.setChecked(True)
+
         # Actions
+        self.compatibility_checkbox.stateChanged.connect(self.toggle_visibility_defrast)
         self.generate_btn.clicked.connect(self.compute_transition_matrix)
         self.close_button.clicked.connect(self.close)
         self.save_matrix_button.clicked.connect(self.save_matrix)
         self.table_widget.cellClicked.connect(self.on_cell_clicked)
         self.save_selection_button.clicked.connect(self.save_transition_mask_as_tif)
+        self.harmonized_rasters_button.clicked.connect(self.add_rasters)
+
+    def toggle_visibility_defrast(self):
+        if self.compatibility_checkbox.isChecked():
+            self.default_raster_combo_label.show()
+            self.default_raster_combo.show()
+        else:
+            self.default_raster_combo_label.hide()
+            self.default_raster_combo.hide()
 
     def compute_transition_matrix(self):
-        raster1_layer = self.raster1_combo.currentLayer()
-        raster2_layer = self.raster2_combo.currentLayer()
+        self.raster1_layer = self.raster1_combo.currentLayer()
+        self.raster2_layer = self.raster2_combo.currentLayer()
         null_value = self.na_spin.value()
 
-        if not raster1_layer or not raster2_layer:
+        if not self.raster1_layer or not self.raster2_layer:
             QMessageBox.warning(self, "Missing Input", "Please select two raster layers.")
             return
         
-        rast_check = renderer.check_rasters(self, raster1_layer, raster2_layer)
+        # Check the raster compatibility
+        rast_check = renderer.check_rasters(self, self.raster1_layer, self.raster2_layer)
+        fixed_layers = None
+        # If it is not none there is a compatibility problem
         if rast_check is not None:
-            QMessageBox.warning(self, "Raster Layer Error" ,rast_check)
-            return
+            # If auto-compatibility is enabled try to fix the rasters
+            if self.compatibility_checkbox.isChecked():
+                fixed_layers = renderer.fix_rasters(self, self.raster1_layer, self.raster2_layer, self.default_raster_combo.currentText())
+                # If string is returned the harmonisation was not successful
+                if isinstance(fixed_layers, str):
+                    QMessageBox.critical(self, "Auto-compatibility fix failed", fixed_layers)
+                    return
+                idx = 0 if self.default_raster_combo.currentText() == "Raster 1" else 1
+                self.raster1_layer, self.raster2_layer = fixed_layers[idx], fixed_layers[1 - idx]
+            else:
+                QMessageBox.warning(self, "Raster Layer Error" ,rast_check)
+                return
 
-
-        matrix = renderer.calculate_transmat(self, raster1_layer, raster2_layer, null_value)
+        matrix = renderer.calculate_transmat(self, self.raster1_layer, self.raster2_layer, null_value)
         if self.percentage_checkbox.isChecked():
             matrix = (matrix / matrix.sum()) * 100
             matrix = np.round(matrix, 2)
@@ -116,6 +159,11 @@ class message(QDialog):
         self.pixmap_label.setPixmap(self.pixmap_white)
         self.transition_mask_tip_label.setText("Click on a cell to generate a transition mask.")
         self.transition_mask = np.array([])
+
+        if isinstance(fixed_layers, list):
+            self.harmonized_rasters_button.show()
+        else:
+            self.harmonized_rasters_button.hide()
     
     def save_matrix(self):
         if self.transition_counts.size == 0:
@@ -175,3 +223,9 @@ class message(QDialog):
             QMessageBox.information(self, "Saved", f"Transition mask saved to:\n{filename}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file:\n{str(e)}")
+
+    def add_rasters(self):
+        self.raster1_layer.setName("Raster 1")
+        self.raster2_layer.setName("Raster 2")
+        QgsProject.instance().addMapLayer(self.raster1_layer)
+        QgsProject.instance().addMapLayer(self.raster2_layer)
