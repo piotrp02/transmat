@@ -188,6 +188,7 @@ class message(QDialog):
 
         self.values_shown_combo_label.show()
         self.values_shown_combo.show()
+        self.values_shown_combo.setCurrentText("Cell count")
 
         if isinstance(fixed_layers, list):
             self.harmonized_rasters_button.show()
