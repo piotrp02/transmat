@@ -5,12 +5,13 @@ author=Piotr Pacuła
 qgisMinimumVersion=3.0
 description=Quick generation of a transition matrix
 about=Transmat plugin allows users to quickly generate a transition matrix between two raster layers. It also provides an option to generate a transition mask between two selected values.
-version=version 1.2
+version=version 1.3
 category=Raster
 changelog=
     1.0 - First release
     1.1 - Added auto-compatibility fix
     1.2 - Added raster band selection
+    1.3 - Added labels to the transition matrix
 tags=raster, transition matrix, raster analysis, land cover, temporal analysis, image comparison, pixel transition, land use change
 icon=icon.png
 experimental=True

@@ -5,14 +5,12 @@ from qgis.core import *
 from qgis.gui import *
 from qgis.utils import iface
 import numpy as np
-
 from .geospatial import renderer
-
 
 class message(QDialog):
     def __init__(self):
         super().__init__()
-        self.resize(800,800)
+        self.resize(800,900)
         self.setWindowTitle("Transmat")
 
         self.raster1_combo_label = QLabel("Raster 1")
@@ -51,10 +49,6 @@ class message(QDialog):
         # Button to generate matrix
         self.generate_btn = QPushButton("Generate Transition Matrix")
 
-        # Matrix table
-        self.transition_counts = np.array([])
-        self.table_widget = QTableWidget()
-
         self.transition_mask_tip_label = QLabel()
 
         # Selection plot
@@ -78,6 +72,17 @@ class message(QDialog):
         self.button_layout.addWidget(self.harmonized_rasters_button)
         self.harmonized_rasters_button.hide()
 
+        # Matrix table layout
+        self.transition_counts = np.array([])
+        table_top_label = QLabel("Raster 2")
+        table_top_label.setAlignment(Qt.AlignCenter)
+        table_left_label = QLabel("Raster 1")
+        table_left_label.setAlignment(Qt.AlignCenter)
+        self.table_widget = QTableWidget()
+        self.table_layout = QGridLayout()
+        self.table_layout.addWidget(table_top_label, 0, 1)
+        self.table_layout.addWidget(table_left_label, 1, 0)
+        self.table_layout.addWidget(self.table_widget, 1, 1)
 
         # Add to your main layout
         mainLayout = QVBoxLayout()
@@ -96,7 +101,7 @@ class message(QDialog):
         mainLayout.addWidget(self.default_raster_combo)
         mainLayout.addWidget(self.percentage_checkbox)
         mainLayout.addWidget(self.generate_btn)
-        mainLayout.addWidget(self.table_widget)
+        mainLayout.addLayout(self.table_layout)
         mainLayout.addWidget(self.transition_mask_tip_label, alignment=Qt.AlignCenter)
         mainLayout.addWidget(self.pixmap_label, alignment=Qt.AlignCenter)
         mainLayout.addLayout(self.button_layout)
