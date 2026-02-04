@@ -30,4 +30,3 @@ class transmat:
     # create and show a configuration dialog or something similar
     #print "TestPlugin: run called!"
     self.msg.show()
-
