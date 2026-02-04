@@ -3,7 +3,7 @@
 A QGIS Plugin for quick and easy generation of a transition matrix and transition masks between two raster layers 
 
 
-<img width="1586" height="1778" alt="image" src="https://github.com/user-attachments/assets/d0bb8cfb-a1bd-40dc-8739-9352c585f967" />
+<img width="793" height="889" alt="image" src="https://github.com/user-attachments/assets/d0bb8cfb-a1bd-40dc-8739-9352c585f967" />
 
 
 ## Features
