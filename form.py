@@ -27,7 +27,7 @@ class message(QDialog):
         self.raster2_band_label = QLabel("Raster 2 band")
         self.raster2_band_combo = QComboBox()
 
-        self.na_spin_label = QLabel("NA Value")
+        self.na_spin_label = QLabel("No-Data value")
         self.na_spin = QSpinBox()
         self.na_spin.setMinimum(-9999)
         self.na_spin.setMaximum(9999)
