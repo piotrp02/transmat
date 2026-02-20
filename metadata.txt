@@ -2,7 +2,7 @@
 name=Transmat
 email=piotrp02@protonmail.com
 author=Piotr Pacuła
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.34
 description=Quick generation of a transition matrix
 about=Transmat plugin allows users to quickly generate a transition matrix between two raster layers. It also provides an option to generate a transition mask between two selected values.
 version=version 1.5
